@@ -144,3 +144,66 @@ SELECT 'AuthorBookRelation', Author_ID, Book_ISBN FROM plain_relational.AuthorBo
 
 INSERT INTO all_data (table_name, publisher_name, book_isbn)
 SELECT 'PublisherBookRelation', publisher_name, Book_isbn FROM plain_relational.PublisherBookRelation;
+
+SET search_path TO xml_json;
+
+CREATE TABLE json_data (
+    id serial PRIMARY KEY,
+    data JSONB
+);
+
+INSERT INTO json_data (data)
+SELECT 
+    jsonb_build_object(
+        'publisher_name', publisher_name,
+        'address', address,
+        'country', country,
+        'CEO', CEO
+    ) AS data
+FROM plain_relational.Publisher;
+
+INSERT INTO json_data (data)
+SELECT 
+    jsonb_build_object(
+        'author_id', author_id,
+        'name', name,
+        'age', age,
+        'country', country
+    ) AS data
+FROM plain_relational.author;
+
+INSERT INTO json_data (data)
+SELECT 
+    jsonb_build_object(
+        'author_id', author_id,
+        'agent_name', agent_name
+    ) AS data
+FROM plain_relational.AuthorWithAgent;
+
+INSERT INTO json_data (data)
+SELECT 
+    jsonb_build_object(
+        'isbn', isbn,
+        'title', title,
+        'price', price,
+        'year', year,
+        'publisher_name', publisher_name
+    ) AS data
+FROM plain_relational.Book;
+
+INSERT INTO json_data (data)
+SELECT 
+    jsonb_build_object(
+        'Author_ID', Author_ID,
+        'Book_ISBN', Book_ISBN
+    ) AS data
+FROM plain_relational.AuthorBookRelation;
+
+INSERT INTO json_data (data)
+SELECT 
+    jsonb_build_object(
+        'publisher_name', publisher_name,
+        'Book_ISBN', Book_ISBN
+    ) AS data
+FROM plain_relational.PublisherBookRelation;
+
