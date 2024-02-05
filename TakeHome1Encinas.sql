@@ -249,3 +249,83 @@ JOIN
     plain_relational.Book AS B ON P.publisher_name = B.publisher_name
 WHERE
     B.year = 2015;
+
+
+SELECT DISTINCT
+    A1.name AS author1_name,
+    A2.name AS author2_name
+FROM
+    plain_relational.AuthorBookRelation AS ABR1
+JOIN
+    plain_relational.Author AS A1 ON ABR1.Author_ID = A1.Author_ID
+JOIN
+    plain_relational.AuthorBookRelation AS ABR2 ON ABR1.Book_ISBN = ABR2.Book_ISBN
+JOIN
+    plain_relational.Author AS A2 ON ABR2.Author_ID = A2.Author_ID
+WHERE
+    A1.Author_ID < A2.Author_ID;
+
+
+/* extended relational */
+
+
+SELECT 
+    A.author_name,
+    AVG(B.price) AS average_book_price,
+	AW.agent_name
+FROM 
+    extended_relational.all_data A
+LEFT JOIN
+    extended_relational.all_data AB ON A.author_id = AB.author_id AND AB.table_name = 'AuthorBookRelation'
+LEFT JOIN
+    extended_relational.all_data B ON AB.book_isbn = B.book_isbn AND B.table_name = 'Book'
+LEFT JOIN
+    extended_relational.all_data AW ON A.author_name = AW.author_name AND AW.table_name = 'AuthorWithAgent'
+WHERE 
+    A.table_name = 'Author'
+GROUP BY
+    A.author_name,  AW.agent_name;
+
+
+SELECT
+    B.title AS book_title,
+    COUNT(A.Author_ID) AS number_of_authors_under_25
+FROM
+    extended_relational.all_data ABR
+JOIN
+    extended_relational.all_data A ON ABR.author_id = A.author_id AND A.table_name = 'Author'
+JOIN
+    extended_relational.all_data B ON ABR.book_isbn = B.book_isbn AND B.table_name = 'Book'
+WHERE
+    A.age < 25
+GROUP BY
+    B.title;
+
+
+SELECT
+    PBR.publisher_name,
+    B.title AS book_title_in_2015
+FROM
+    extended_relational.all_data B
+JOIN
+    extended_relational.all_data PBR ON B.publisher_name = PBR.publisher_name AND PBR.table_name = 'Publisher'
+WHERE
+    B.year = 2015;
+
+
+
+SELECT DISTINCT
+    A1.author_name AS author1_name,
+    A2.author_name AS author2_name
+FROM
+    extended_relational.all_data AS ABR1
+JOIN
+    extended_relational.all_data AS ABR2 ON ABR1.book_isbn = ABR2.book_isbn AND ABR1.author_id < ABR2.author_id
+JOIN
+    extended_relational.all_data AS A1 ON ABR1.author_id = A1.author_id AND A1.table_name = 'Author'
+JOIN
+    extended_relational.all_data AS A2 ON ABR2.author_id = A2.author_id AND A2.table_name = 'Author'
+WHERE
+    ABR1.table_name = 'AuthorBookRelation'
+    AND ABR2.table_name = 'AuthorBookRelation';
+
