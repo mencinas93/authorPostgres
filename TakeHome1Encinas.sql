@@ -158,9 +158,11 @@ CREATE TABLE json_data (
     data JSONB
 );
 
+
 INSERT INTO json_data (data)
 SELECT 
     jsonb_build_object(
+        'type', 'Publisher',
         'publisher_name', publisher_name,
         'address', address,
         'country', country,
@@ -171,6 +173,7 @@ FROM plain_relational.Publisher;
 INSERT INTO json_data (data)
 SELECT 
     jsonb_build_object(
+        'type', 'Author',
         'author_id', author_id,
         'name', name,
         'age', age,
@@ -181,6 +184,7 @@ FROM plain_relational.author;
 INSERT INTO json_data (data)
 SELECT 
     jsonb_build_object(
+        'type', 'AuthorWithAgent',
         'author_id', author_id,
         'agent_name', agent_name
     ) AS data
@@ -189,6 +193,7 @@ FROM plain_relational.AuthorWithAgent;
 INSERT INTO json_data (data)
 SELECT 
     jsonb_build_object(
+        'type', 'Book',
         'isbn', isbn,
         'title', title,
         'price', price,
@@ -200,14 +205,17 @@ FROM plain_relational.Book;
 INSERT INTO json_data (data)
 SELECT 
     jsonb_build_object(
+        'type', 'AuthorBookRelation',
         'Author_ID', Author_ID,
         'Book_ISBN', Book_ISBN
     ) AS data
 FROM plain_relational.AuthorBookRelation;
 
+
 INSERT INTO json_data (data)
 SELECT 
     jsonb_build_object(
+        'type', 'PublisherBookRelation',
         'publisher_name', publisher_name,
         'Book_ISBN', Book_ISBN
     ) AS data
@@ -328,4 +336,6 @@ JOIN
 WHERE
     ABR1.table_name = 'AuthorBookRelation'
     AND ABR2.table_name = 'AuthorBookRelation';
+
+SET search_path TO xml_json;
 
