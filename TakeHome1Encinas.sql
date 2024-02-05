@@ -62,8 +62,10 @@ VALUES
 INSERT INTO Author (author_id, name, age, country)
 VALUES
     (1, 'Sarah J. Maas', 30, 'USA'),
-    (2, 'Rebecca Yarros', 25, 'USA'),
-    (3, 'Stephen King', 35, 'Canada');
+    (2, 'Rebecca Yarros', 24, 'USA'),
+    (3, 'Stephen King', 35, 'Canada'),
+    (4, 'John Jones', 57, 'USA'),
+    (5, 'Michael Ellison', 68, 'USA');
 
 INSERT INTO AuthorWithAgent (Author_ID, agent_name)
 VALUES
@@ -75,9 +77,10 @@ VALUES
 INSERT INTO Book (isbn, title, price, year, publisher_name)
 VALUES
     ('1020011893', 'A Court of Thorns and Roses', 30.99, 2023, 'Learning Center'),
-    ('1020011894', 'Iron Flame', 25.99, 2013, 'Book4Ever'),
+    ('1020011894', 'Iron Flame', 25.99, 2015, 'Book4Ever'),
     ('1020011895', 'Forth Wing', 27.99, 1998, 'Learning Center'),
-    ('1020011896', 'Cresant City', 40.99, 2024, 'Book4Ever');
+    ('1020011896', 'Cresant City', 40.99, 2024, 'Book4Ever'),
+    ('1020011897', 'Earth Dome', 41.99, 2017, 'Book4Ever');
 
 
 
@@ -86,7 +89,9 @@ VALUES
     (1, '1020011893'),
     (2, '1020011894'),
     (3, '1020011895'),
-    (1, '1020011896');
+    (1, '1020011896'),
+    (4, '1020011897'),
+    (5, '1020011897');
 
 
 INSERT INTO PublisherBookRelation (publisher_name, Book_ISBN)
@@ -94,7 +99,8 @@ VALUES
     ('Learning Center', '1020011893'),
     ('Book4Ever', '1020011894'),
     ('Learning Center', '1020011895'),
-    ('Book4Ever', '1020011896');
+    ('Book4Ever', '1020011896'),
+    ('Book4Ever', '1020011897');
 
 SET search_path TO extended_relational;
 
@@ -207,3 +213,39 @@ SELECT
     ) AS data
 FROM plain_relational.PublisherBookRelation;
 
+Select A.name as author_name,
+    avg(Book.price) AS Average_Book_Price,
+    AW.agent_name
+From plain_relational.Author as A
+Join plain_relational.AuthorBookRelation AS ABR on 
+A.Author_ID = ABR.Author_ID
+Join plain_relational.Book as Book on ABR.Book_ISBN = book.isbn
+left Join
+    plain_relational.AuthorWithAgent as AW on A.Author_ID = AW.author_Id
+group by 
+    A.Author_ID, AW.agent_name;
+
+SELECT
+    B.title AS book_title,
+    COUNT(A.Author_ID) AS number_of_authors_under_25
+FROM
+    plain_relational.Book AS B
+JOIN
+    plain_relational.AuthorBookRelation AS ABR ON B.isbn = ABR.Book_ISBN
+JOIN
+    plain_relational.Author AS A ON ABR.Author_ID = A.Author_ID
+WHERE
+    A.age < 25
+GROUP BY
+    B.title;
+
+
+SELECT
+    P.publisher_name as publisher_name_for_2015_Publish,
+    B.title AS book_title
+FROM
+    plain_relational.Publisher AS P
+JOIN
+    plain_relational.Book AS B ON P.publisher_name = B.publisher_name
+WHERE
+    B.year = 2015;
