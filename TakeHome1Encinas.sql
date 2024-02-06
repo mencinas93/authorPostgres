@@ -459,3 +459,129 @@ JOIN
     )
 WHERE
     A.data ->> 'type' = 'Author';
+
+
+
+
+Drop table if exists Myorder CASCADE;
+DROP TYPE IF EXISTS Lineitem;
+
+Create Type Lineitem as (
+	partKey integer, 
+	suppKey integer,
+	unitPrice numeric, 
+	quantity integer
+);
+
+Create table Myorder(
+	orderKey integer primary key,
+	custKey integer,
+	orderstatus integer,
+	totalPrice numeric,
+	orderDate date,
+	items lineitem[]
+);
+
+
+
+/* 1: Pending
+2: Processing
+3: Shipped
+4: Delivered
+5: Cancelled 
+*/
+
+INSERT INTO Myorder (orderKey, custKey, orderstatus, totalPrice, orderDate, items)
+VALUES
+    (1, 100, 4, 2100.00, '2024-02-01', ARRAY[
+        ROW(1, 101, 90.00, 4)::lineitem,
+        ROW(2, 102, 200.00, 3)::lineitem,
+        ROW(3, 103, 50.00, 4)::lineitem,
+        ROW(4, 102, 100.00, 6)::lineitem,
+        ROW(5, 102, 20.00, 8)::lineitem,
+        ROW(6, 102, 15.00, 12)::lineitem
+    ]),
+    (2, 101, 3, 4600.00, '2024-02-02', ARRAY[
+        ROW(8, 103, 100.00, 11)::lineitem,
+        ROW(9, 103, 100.00, 11)::lineitem,
+        ROW(10, 103, 30.00, 12)::lineitem,
+        ROW(11, 103, 500.00, 1)::lineitem,
+        ROW(12, 106, 250.00, 1)::lineitem,
+        ROW(13, 105, 600.00, 2)::lineitem,
+        ROW(14, 105, 90.00, 1)::lineitem
+    ]),
+    (3, 102, 3, 1000.00, '2024-02-02', ARRAY[
+        ROW(15, 104, 10.00, 10)::lineitem,
+        ROW(16, 104, 8.00, 8)::lineitem,
+        ROW(17, 104, 6.00, 6)::lineitem,
+        ROW(18, 104, 8.00, 8)::lineitem,
+        ROW(19, 104, 8.00, 8)::lineitem,
+        ROW(20, 104, 7.00, 7)::lineitem,
+        ROW(21, 104, 5.00, 5)::lineitem,
+        ROW(22, 104, 10.00, 10)::lineitem,
+        ROW(23, 104, 8.00, 8)::lineitem,
+        ROW(24, 106, 6.00, 6)::lineitem,
+        ROW(25, 103, 8.00, 8)::lineitem,
+        ROW(26, 103, 8.00, 8)::lineitem,
+        ROW(27, 103, 7.00, 7)::lineitem,
+        ROW(28, 103, 5.00, 5)::lineitem
+    ]),
+    (4, 103, 1, 6700.00, '2024-02-03', ARRAY[
+        ROW(8, 103, 100.00, 11)::lineitem,
+        ROW(9, 103, 100.00, 5)::lineitem,
+        ROW(29, 107, 200.00, 6)::lineitem,
+        ROW(30, 107, 40.00, 5)::lineitem,
+        ROW(11, 103, 500.00, 7)::lineitem,
+        ROW(31, 107, 15.00, 10)::lineitem,
+        ROW(32, 107, 12.00, 5)::lineitem
+    ]),
+    (5, 104, 2, 3700.00, '2024-02-01', ARRAY[
+        ROW(33, 107, 50.00, 8)::lineitem,
+        ROW(34, 107, 200.00, 9)::lineitem,
+        ROW(35, 103, 10.00, 11)::lineitem,
+        ROW(36, 104, 350.00, 1)::lineitem,
+        ROW(37, 102, 100.00, 2)::lineitem,
+        ROW(38, 106, 20.00, 1)::lineitem,
+        ROW(39, 101, 200.00, 1)::lineitem
+    ]);
+
+
+    /*Search*/
+    /* creating a view so you get descriptive of search
+    will be ideal*/
+
+    SELECT orderKey, orderstatus
+FROM myorder MO
+WHERE (
+    SELECT COUNT(*)
+    FROM unnest(MO.items) AS line_items
+    WHERE line_items.quantity > 10
+) >= 2;
+
+Select orderKey, orderstatus
+FROM myorder MO
+where EXISTS (
+	SELECT COUNT(*)
+	FROM unnest(MO.items) AS line_items
+	JOIN unnest(MO.items) AS Line_items2
+	on line_items.suppkey = Line_items2.suppkey
+	AND Line_items.partkey != Line_items2.partkey	
+);
+
+
+SELECT orderKey, AVG(quantity) AS avg_lineitems_quantity
+FROM Myorder,
+    unnest(items) AS line_item
+GROUP BY orderKey
+ORDER BY orderKey;
+
+SELECT orderKey, orderstatus, total_cost, totalPrice, total_cost - totalPrice AS cost_difference
+FROM (
+    SELECT mo.orderKey, mo.orderstatus,
+           SUM(li.unitPrice * li.quantity) AS total_cost,
+           mo.totalPrice
+    FROM Myorder mo
+    CROSS JOIN UNNEST(mo.items) AS li
+    GROUP BY mo.orderKey, mo.orderstatus, mo.totalPrice
+) AS order_summary
+WHERE total_cost != totalPrice;
