@@ -339,3 +339,123 @@ WHERE
 
 SET search_path TO xml_json;
 
+
+/*Json Search */
+
+SELECT
+    jsonb_build_object(
+        'author_name', A.data ->> 'name',
+        'agent_name', (
+            SELECT data ->> 'agent_name'
+            FROM json_data
+            WHERE data ->> 'type' = 'AuthorWithAgent' AND data ->> 'author_id' = A.data ->> 'author_id'
+        ),
+        'average_book_price', (
+            SELECT COALESCE(to_jsonb(AVG((CAST(B.data ->> 'price' AS NUMERIC)))), 'null')
+            FROM json_data B
+            INNER JOIN json_data AB ON AB.data ->> 'Book_ISBN' = B.data ->> 'isbn'
+                AND AB.data ->> 'type' = 'AuthorBookRelation'
+            WHERE B.data ->> 'type' = 'Book'
+                AND AB.data ->> 'Author_ID' = A.data ->> 'author_id'
+        )
+    ) AS author_agent_average_book_price
+FROM
+    json_data A
+WHERE
+    A.data ->> 'type' = 'Author';
+
+
+
+
+
+
+SELECT
+    json_agg(
+        jsonb_build_object(
+            'book_title', B.data ->> 'title',
+            'Number_of_authors_under_25', subquery.author_count
+        )
+    ) AS Authors_that_wrote_Books_while_younger_than_25
+FROM
+    json_data B
+JOIN
+    json_data AB ON AB.data ->> 'Book_ISBN' = B.data ->> 'isbn'
+    AND AB.data ->> 'type' = 'AuthorBookRelation'
+JOIN
+    json_data A ON AB.data ->> 'Author_ID' = A.data ->> 'author_id'
+JOIN
+    (
+        SELECT
+            B.data ->> 'title' AS book_title,
+            COUNT(*) AS author_count
+        FROM
+            json_data B
+        JOIN
+            json_data AB ON AB.data ->> 'Book_ISBN' = B.data ->> 'isbn'
+            AND AB.data ->> 'type' = 'AuthorBookRelation'
+        JOIN
+            json_data A ON AB.data ->> 'Author_ID' = A.data ->> 'author_id'
+        WHERE
+            B.data ->> 'type' = 'Book' AND CAST(A.data ->> 'age' AS INTEGER) < 25
+        GROUP BY
+            B.data ->> 'title'
+    ) subquery ON B.data ->> 'title' = subquery.book_title;
+
+
+
+
+
+    SELECT
+    jsonb_build_object(
+        'publisher_name', P.data ->> 'publisher_name',
+        'books_published_in_2015', (
+            SELECT jsonb_agg(
+                jsonb_build_object(
+                    'book_title', B.data ->> 'title'
+                )
+            )
+            FROM json_data B
+            INNER JOIN json_data PB ON PB.data ->> 'Book_ISBN' = B.data ->> 'isbn'
+                AND PB.data ->> 'type' = 'PublisherBookRelation'
+            WHERE B.data ->> 'type' = 'Book'
+                AND PB.data ->> 'publisher_name' = P.data ->> 'publisher_name'
+                AND CAST(B.data ->> 'year' AS INTEGER) = 2015
+        )
+    ) AS publisher_data_for_2015_books
+FROM
+    json_data P
+WHERE
+    EXISTS (
+        SELECT 1
+        FROM json_data B
+        INNER JOIN json_data PB ON PB.data ->> 'Book_ISBN' = B.data ->> 'isbn'
+            AND PB.data ->> 'type' = 'PublisherBookRelation'
+        WHERE B.data ->> 'type' = 'Book'
+            AND PB.data ->> 'publisher_name' = P.data ->> 'publisher_name'
+            AND CAST(B.data ->> 'year' AS INTEGER) = 2015
+    )
+    AND P.data ->> 'type' = 'Publisher';
+
+
+SELECT
+    jsonb_build_object(
+        'author_1', A.data ->> 'name',
+        'author_2', B.data ->> 'name'
+    ) AS author_pair_in_written_book
+FROM
+    json_data A
+JOIN
+    json_data B ON A.data ->> 'type' = 'Author'
+    AND B.data ->> 'type' = 'Author'
+    AND A.data ->> 'author_id' < B.data ->> 'author_id' 
+JOIN
+    json_data AB ON AB.data ->> 'type' = 'AuthorBookRelation'
+    AND AB.data ->> 'Author_ID' = A.data ->> 'author_id'
+    AND AB.data ->> 'Book_ISBN' IN (
+        SELECT AB2.data ->> 'Book_ISBN'
+        FROM json_data AB2
+        WHERE AB2.data ->> 'type' = 'AuthorBookRelation'
+            AND AB2.data ->> 'Author_ID' = B.data ->> 'author_id'
+    )
+WHERE
+    A.data ->> 'type' = 'Author';
