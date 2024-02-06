@@ -461,7 +461,7 @@ WHERE
     A.data ->> 'type' = 'Author';
 
 
-
+set search_path to public;
 
 Drop table if exists Myorder CASCADE;
 DROP TYPE IF EXISTS Lineitem;
@@ -585,3 +585,11 @@ FROM (
     GROUP BY mo.orderKey, mo.orderstatus, mo.totalPrice
 ) AS order_summary
 WHERE total_cost != totalPrice;
+
+/* sample quick select all on some 
+tables within other schemas
+Select * from extended_relational.all_data
+Select * from plain_relational.authorbookrelation
+Select * from public.myorder
+Select * from xml_json.json_data
+*/
